@@ -1,0 +1,30 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "data": {
+                    "hostname": "Hostname or IP Address",
+                    "username": "Username",
+                    "password": "Password"
+                },
+                "data_description": {
+                    "host": "Enter the hostname or ip address of the Wifi Data Logger in a http url format",
+                    "username": "User name for the portal : admin",
+                    "password": "Enter the password for the portal, it is the Wifi access key"
+                },
+                "title": "Solis Wifi Data Logger",
+                "description": "Set up Solis Wifi Data Logger Connection."
+            }
+        },
+        "abort": {
+            "already_configured": "[%key:common::config_flow::abort::already_configured]",
+            "init_failed": "[%key:common::config_flow::abort::init_failed]"
+            },
+        "error": {
+            "unknown": "Unknown error has occured, please check the logs",
+            "invalid_auth": "The credentials provided are incorrect",
+            "cannot_connect": "Make sure the hostname or IP Address is correct",
+            "incorrect_host": "Error parsing response from host"
+        }
+    }
+}

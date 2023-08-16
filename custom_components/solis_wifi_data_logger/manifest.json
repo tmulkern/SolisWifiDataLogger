@@ -1,0 +1,12 @@
+{
+    "domain": "solis_wifi_data_logger",
+    "name": "Solis Wifi Data Logger",
+    "config_flow": true,
+    "documentation": "",
+    "integration_type": "device",
+    "dependencies": [],
+    "codeowners": ["tmulkern"],
+    "requirements": ["aiofiles==22.1.0"],
+    "version": "0.0.1"
+  }
+  
