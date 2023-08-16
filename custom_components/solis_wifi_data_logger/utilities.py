@@ -5,7 +5,6 @@ from homeassistant.helpers.entity import DeviceInfo
 
 from .const import DOMAIN
 from .solis_wifi_api import SystemData
-from .data_update_coordinator import SolisWifiApiDataUpdateCoordinator
 
 class Utilities:
 
@@ -15,9 +14,9 @@ class Utilities:
         
         if propertyName:
             propertyNameFormated=propertyName.lower()
-            return f"{dataSourceNameFormated}_{propertyNameFormated}"
+            return f"solis_{dataSourceNameFormated}_{propertyNameFormated}"
         else:
-            return f"{dataSourceNameFormated}"
+            return f"solis_{dataSourceNameFormated}"
         
     @staticmethod
     def GenerateUniqueId(coordinator: DataUpdateCoordinator,sensorName:str) -> str:
