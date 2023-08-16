@@ -44,7 +44,7 @@ class SolisApiSensor(CoordinatorEntity[SolisWifiApiDataUpdateCoordinator],Sensor
             "inverter" : {
                "temperature" : [Type[float],"temperature","mdi:thermometer",None,"°C",SensorStateClass.MEASUREMENT],
                "current_power" : [Type[float],"power","mdi:solar-power-variant",None,"W",SensorStateClass.MEASUREMENT],
-               "daily_power_yield" : [Type[float],"energy","mdi:meter-electric",None,"kWh",SensorStateClass.TOTAL]
+               "daily_power_yield" : [Type[float],"energy","mdi:meter-electric",None,"kWh",SensorStateClass.TOTAL_INCREASING]
             },
             "wifi_logger" : {
                "signal_quality" : [Type[float],None,"mdi:signal",EntityCategory.DIAGNOSTIC,"%",SensorStateClass.MEASUREMENT],
@@ -64,7 +64,7 @@ class SolisApiSensor(CoordinatorEntity[SolisWifiApiDataUpdateCoordinator],Sensor
         self._dataSource=dataSource
         self._propertyName=propertyName
         self._attr_state=stateType
-        self._attr_deviceClass=deviceClass
+        self._attr_device_class=deviceClass
         self._attr_icon=icon
         self._attr_state_class=stateClass
         self._attr_entity_category=entityCategory
