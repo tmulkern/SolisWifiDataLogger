@@ -10,13 +10,14 @@ class Utilities:
 
     @staticmethod
     def FormatSensorName(dataSourceName:str,propertyName:str) -> str:
-        dataSourceNameFormated=dataSourceName.lower()
-        
-        if propertyName:
-            propertyNameFormated=propertyName.lower()
-            return f"solis_{dataSourceNameFormated}_{propertyNameFormated}"
-        else:
-            return f"solis_{dataSourceNameFormated}"
+
+        propertyNameFormated=f"Solis {dataSourceName.lower().capitalize()}"
+        propertyNameParts = propertyName.lower().split("_")
+
+        for part in propertyNameParts:
+            propertyNameFormated+=f" {part.capitalize()}"
+
+        return propertyNameFormated
         
     @staticmethod
     def GenerateUniqueId(coordinator: DataUpdateCoordinator,sensorName:str) -> str:
