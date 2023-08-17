@@ -17,9 +17,9 @@ class InverterData:
     serial_number: str
     firmware_version: str|None
     model: str
-    temperature: float|None
-    current_power: float|None
-    daily_power_yield: float|None
+    temperature: float
+    current_power: float
+    daily_power_yield: float
     alerts: bool|None
 
     @classmethod
@@ -43,7 +43,7 @@ class WifiDataLoggerData:
     wireless_ap_mode:bool|None
     wireless_sta_mode:bool|None
     router_ssid:str|None
-    signal_quality:float|None
+    signal_quality:int
     ip_address:str|None
     mac_address:str
     remote_server_a:bool|None
@@ -140,9 +140,9 @@ class SolisWifiApi():
             last_known_system_data.inverter.serial_number if last_known_system_data else "",
             None,
             last_known_system_data.inverter.model if last_known_system_data else "",
-            None,
-            None,
-            None,
+            0,
+            0,
+            0,
             None
         )
 
@@ -154,7 +154,7 @@ class SolisWifiApi():
             None,
             None,
             None,
-            None,
+            0,
             last_known_system_data.wifi_logger.ip_address if last_known_system_data else "",
             last_known_system_data.wifi_logger.mac_address if last_known_system_data else "",
             None,
