@@ -48,15 +48,15 @@ class SolisApiBinarySensor(CoordinatorEntity[SolisWifiApiDataUpdateCoordinator],
                ]] 
             },
             "wifi_logger" : {
-               "online_status" : [BinarySensorDeviceClass.CONNECTIVITY,None,"mdi:wifi-check",[
+               "online_status" : [BinarySensorDeviceClass.CONNECTIVITY,EntityCategory.DIAGNOSTIC,"mdi:wifi-check",[
                     "last_seen","serial_number","firmware_version"
                ]],
-               "wireless_ap_mode" : [None,EntityCategory.CONFIG,"mdi:access-point",None],
-               "wireless_sta_mode" : [None,EntityCategory.CONFIG,"mdi:wifi-settings",[
+               "wireless_ap_mode" : [None,EntityCategory.DIAGNOSTIC ,"mdi:access-point",None],
+               "wireless_sta_mode" : [None,EntityCategory.DIAGNOSTIC ,"mdi:wifi-settings",[
                     "router_ssid","ip_address","mac_address"     
                ]],
-               "remote_server_a" : [BinarySensorDeviceClass.CONNECTIVITY,None,"mdi:connection",None,None],
-               "remote_server_b" : [BinarySensorDeviceClass.CONNECTIVITY,None,"mdi:connection",None,None]
+               "remote_server_a" : [BinarySensorDeviceClass.CONNECTIVITY,EntityCategory.DIAGNOSTIC,"mdi:connection",None,None],
+               "remote_server_b" : [BinarySensorDeviceClass.CONNECTIVITY,EntityCategory.DIAGNOSTIC,"mdi:connection",None,None]
             }
         }
         if mapping.get(dataSource) and mapping[dataSource].get(propertyName):
