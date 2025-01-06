@@ -6,7 +6,7 @@
     "integration_type": "device",
     "dependencies": [],
     "codeowners": ["tmulkern"],
-    "requirements": ["aiofiles==22.1.0"],
+    "requirements": ["aiofiles>=22.1.0"],
     "version": "0.0.1"
   }
   
