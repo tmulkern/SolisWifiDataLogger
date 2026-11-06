@@ -1,7 +1,9 @@
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
-from homeassistant.helpers.entity import DeviceInfo
 
 from .const import DOMAIN
 from .solis_wifi_api import SystemData
@@ -24,7 +26,7 @@ class Utilities:
         return f"{DOMAIN}_{coordinator.data.wifi_logger.serial_number}_{sensorName}"
     
     @staticmethod
-    def GenerateDeviceInfo(systemData:SystemData,dataSource:str) -> DeviceInfo|None:
+    def GenerateDeviceInfo(hass: HomeAssistant, systemData: SystemData, dataSource: str) -> DeviceInfo | None:
 
         if dataSource == "wifi_logger":
             return DeviceInfo(
@@ -38,15 +40,19 @@ class Utilities:
                 connections={(DOMAIN,f"http://{systemData.wifi_logger.ip_address}")},
             )
 
-        if dataSource == "inverter":     
+        if dataSource == "inverter":
+            dev_reg = dr.async_get(hass)
+            hub_device = dev_reg.async_get_device_by_identifier(
+                (DOMAIN, f"solis_wifi_data_logger_{systemData.wifi_logger.serial_number}")
+            )
             return DeviceInfo(
                 model=systemData.inverter.model,
                 sw_version=systemData.inverter.firmware_version,
                 hw_version=systemData.inverter.serial_number,
                 manufacturer="Solis",
-                name=f"Solis Inverter",
+                name="Solis Inverter",
                 identifiers={(DOMAIN, f"solis_{systemData.inverter.model}_{systemData.inverter.serial_number}")},
-                via_device=(DOMAIN, f"solis_wifi_data_logger_{systemData.wifi_logger.serial_number}")
+                via_device_id=hub_device.id if hub_device else None,
             )
         
         return None

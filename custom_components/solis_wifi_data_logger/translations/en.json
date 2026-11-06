@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "data": {
-                    "hostname": "Hostname or IP Address",
+                    "host": "Hostname or IP Address",
                     "username": "Username",
                     "password": "Password"
                 },

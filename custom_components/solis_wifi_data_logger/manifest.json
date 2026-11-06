@@ -4,6 +4,7 @@
     "config_flow": true,
     "documentation": "",
     "integration_type": "device",
+    "iot_class": "local_polling",
     "dependencies": [],
     "codeowners": ["@tmulkern"],
     "requirements": ["aiofiles>=22.1.0"],

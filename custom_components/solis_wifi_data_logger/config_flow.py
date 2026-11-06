@@ -26,12 +26,10 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 )
 
 
-@config_entries.HANDLERS.register("SolisWifiDataLogger")
-class FlowHandler(config_entries.ConfigFlow,domain=DOMAIN):
+class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow."""
 
     VERSION = 1
-    CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
 
     def __init__(self):
         """Initialize the Solis Wifi Data Logger flow."""
@@ -87,7 +85,7 @@ class FlowHandler(config_entries.ConfigFlow,domain=DOMAIN):
                 if e.status==401:
                    return {CONF_PASSWORD:"invalid_auth"}
                 if e.status==404:
-                   return {CONF_PASSWORD:"incorrect_host"}
+                   return {CONF_HOST:"incorrect_host"}
                 return {"base":"unknown"}
 
 

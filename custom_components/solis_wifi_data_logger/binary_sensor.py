@@ -2,15 +2,14 @@ import logging
 from .solis_wifi_api import SystemData
 
 from homeassistant.components.binary_sensor import BinarySensorEntity, BinarySensorDeviceClass
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.const import EntityCategory
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity
 )
-from homeassistant.helpers.entity import EntityCategory
 from homeassistant.core import callback
 from .utilities import Utilities
 from .data_update_coordinator import SolisWifiApiDataUpdateCoordinator
-from homeassistant.helpers.entity import EntityCategory
 
 from .const import DOMAIN,COORDINATOR
 
@@ -28,7 +27,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     for dataSource, value in filteredSystemData.items():
         propertyNames=[a for a in dir(value) if not a.startswith('__') and not callable(getattr(value, a))]
         for propertyName in propertyNames:
-            deviceInfo = Utilities.GenerateDeviceInfo(systemdata,dataSource)
+            deviceInfo = Utilities.GenerateDeviceInfo(hass, systemdata, dataSource)
             sensor=SolisApiBinarySensor.factory(coordinator,deviceInfo,dataSource,propertyName)
             if(sensor):
                 sensors.append(sensor)

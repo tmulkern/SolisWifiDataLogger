@@ -1,16 +1,14 @@
 
 import logging
-from typing import Type
 from .solis_wifi_api import SystemData
 
-from homeassistant.components.sensor import SensorEntity, SensorStateClass
-from homeassistant.helpers.typing import StateType
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
+from homeassistant.const import PERCENTAGE, EntityCategory, UnitOfEnergy, UnitOfPower, UnitOfTemperature
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.helpers.entity import EntityCategory
 from homeassistant.core import callback
 from .utilities import Utilities
 from .data_update_coordinator import SolisWifiApiDataUpdateCoordinator
@@ -29,7 +27,7 @@ async def async_setup_entry(hass, entry:ConfigEntry, async_add_entities):
     for dataSource, value in filteredSystemData.items():
         propertyNames=[a for a in dir(value) if not a.startswith('__') and not callable(getattr(value, a))]
         for propertyName in propertyNames:
-            deviceInfo = Utilities.GenerateDeviceInfo(systemdata,dataSource)
+            deviceInfo = Utilities.GenerateDeviceInfo(hass, systemdata, dataSource)
             sensor=SolisApiSensor.factory(coordinator,dataSource,propertyName,deviceInfo)
             if(sensor):
                 sensors.append(sensor)
@@ -43,12 +41,12 @@ class SolisApiSensor(CoordinatorEntity[SolisWifiApiDataUpdateCoordinator],Sensor
 
         mapping = {
             "inverter" : {
-               "temperature" : [Type[float],"temperature","mdi:thermometer",EntityCategory.DIAGNOSTIC,"°C",SensorStateClass.MEASUREMENT],
-               "current_power" : [Type[float],"power","mdi:solar-power-variant",EntityCategory.DIAGNOSTIC,"W",SensorStateClass.MEASUREMENT],
-               "daily_power_yield" : [Type[float],"energy","mdi:meter-electric",EntityCategory.DIAGNOSTIC,"kWh",SensorStateClass.TOTAL_INCREASING]
+               "temperature" : [SensorDeviceClass.TEMPERATURE, "mdi:thermometer", None, UnitOfTemperature.CELSIUS, SensorStateClass.MEASUREMENT],
+               "current_power" : [SensorDeviceClass.POWER, "mdi:solar-power-variant", None, UnitOfPower.WATT, SensorStateClass.MEASUREMENT],
+               "daily_power_yield" : [SensorDeviceClass.ENERGY, "mdi:meter-electric", None, UnitOfEnergy.KILO_WATT_HOUR, SensorStateClass.TOTAL_INCREASING]
             },
             "wifi_logger" : {
-               "signal_quality" : [Type[float],None,"mdi:signal",EntityCategory.DIAGNOSTIC,"%",SensorStateClass.MEASUREMENT],
+               "signal_quality" : [None, "mdi:signal", EntityCategory.DIAGNOSTIC, PERCENTAGE, SensorStateClass.MEASUREMENT],
             }
         }
         if mapping.get(dataSource) and mapping[dataSource].get(propertyName):
@@ -57,14 +55,13 @@ class SolisApiSensor(CoordinatorEntity[SolisWifiApiDataUpdateCoordinator],Sensor
         else:
             return None
         
-        return SolisApiSensor(coordinator,dataSource,propertyName,configuration[0],configuration[1],configuration[2],configuration[3],configuration[4],configuration[5],deviceInfo)
+        return SolisApiSensor(coordinator,dataSource,propertyName,configuration[0],configuration[1],configuration[2],configuration[3],configuration[4],deviceInfo)
 
-    def __init__(self, coordinator: SolisWifiApiDataUpdateCoordinator,dataSource:str,propertyName:str,stateType:StateType,deviceClass:str,icon:str,entityCategory:EntityCategory,native_unit_of_measurement:str, stateClass:SensorStateClass,deviceInfo:DeviceInfo) -> None:
+    def __init__(self, coordinator: SolisWifiApiDataUpdateCoordinator,dataSource:str,propertyName:str,deviceClass:SensorDeviceClass|None,icon:str,entityCategory:EntityCategory|None,native_unit_of_measurement:str, stateClass:SensorStateClass,deviceInfo:DeviceInfo) -> None:
         super().__init__(coordinator)
 
         self._dataSource=dataSource
         self._propertyName=propertyName
-        self._attr_state=stateType
         self._attr_device_class=deviceClass
         self._attr_icon=icon
         self._attr_state_class=stateClass

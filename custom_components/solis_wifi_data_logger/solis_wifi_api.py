@@ -85,7 +85,7 @@ class SolisWifiApi():
 
     def __init__(self,hostname:str,username:str,password:str) -> None:
         
-        _LOGGER.info((hostname,username,password))
+        _LOGGER.debug("Initializing SolisWifiApi for host %s", hostname)
         self._session = aiohttp.ClientSession(base_url=hostname,auth=aiohttp.BasicAuth(username,password))
    
     async def getSystemData(self) -> SystemData:
