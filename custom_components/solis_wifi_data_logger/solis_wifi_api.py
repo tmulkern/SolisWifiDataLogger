@@ -53,9 +53,16 @@ class WifiDataLoggerData:
 
     @classmethod
     def from_dict(cls,data:dict):
+        # last_seen is serialised to an ISO string in the cache file; restore it
+        # as a timezone-aware datetime (older cache files hold naive local times).
+        last_seen = data["last_seen"]
+        if isinstance(last_seen, str):
+            last_seen = dt_util.parse_datetime(last_seen) or dt_util.utc_from_timestamp(0)
+        if last_seen.tzinfo is None:
+            last_seen = dt_util.as_utc(last_seen)
         return cls(
             online_status=data["online_status"],
-            last_seen=data["last_seen"],
+            last_seen=last_seen,
             serial_number=data["serial_number"],
             firmware_version=data["firmware_version"],
             wireless_ap_mode=data["wireless_ap_mode"],
@@ -178,8 +185,9 @@ class SolisWifiApi():
                 system_data_dict=orjson.loads(content)
                 system_data=SystemData.from_dict(system_data_dict)
                 return system_data
-        except OSError:
-            #await asyncio.sleep(0)
+        except (OSError, ValueError, KeyError, TypeError) as err:
+            # Missing or corrupt cache file: behave as if there is no cached data
+            _LOGGER.debug("Could not load cached data: %s", err)
             return None
 
     def _generateTimeToken(self) -> str:

@@ -23,6 +23,11 @@ class Utilities:
         return propertyNameFormated
         
     @staticmethod
+    def FormatEntityName(propertyName:str) -> str:
+        """Short entity name; the device name is prefixed by HA (has_entity_name)."""
+        return " ".join(part.capitalize() for part in propertyName.lower().split("_"))
+
+    @staticmethod
     def GenerateUniqueId(coordinator: DataUpdateCoordinator,sensorName:str) -> str:
         return f"{DOMAIN}_{coordinator.data.wifi_logger.serial_number}_{sensorName}"
     

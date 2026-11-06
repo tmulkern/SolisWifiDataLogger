@@ -69,9 +69,11 @@ class SolisApiSensor(CoordinatorEntity[SolisWifiApiDataUpdateCoordinator],Sensor
         self._attr_native_unit_of_measurement=native_unit_of_measurement
         self._attr_should_poll=False
 
-        self._attr_name=Utilities.FormatSensorName(dataSource,propertyName)
+        self._attr_has_entity_name=True
+        self._attr_name=Utilities.FormatEntityName(propertyName)
         self._attr_device_info=deviceInfo
-        self._attr_unique_id=Utilities.GenerateUniqueId(coordinator,self._attr_name)
+        # Keep the legacy unique_id format so existing entities/history are preserved
+        self._attr_unique_id=Utilities.GenerateUniqueId(coordinator,Utilities.FormatSensorName(dataSource,propertyName))
 
         #Set Initial Value
         self._attr_native_value=getattr(self._data(),self._propertyName)

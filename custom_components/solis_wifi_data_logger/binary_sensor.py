@@ -77,9 +77,11 @@ class SolisApiBinarySensor(CoordinatorEntity[SolisWifiApiDataUpdateCoordinator],
         self._attr_device_class=binarySensorDeviceClass
         self._attr_should_poll=False
 
-        self._attr_name=Utilities.FormatSensorName(dataSource,propertyName)
+        self._attr_has_entity_name=True
+        self._attr_name=Utilities.FormatEntityName(propertyName)
         self._attr_device_info=deviceInfo
-        self._attr_unique_id=Utilities.GenerateUniqueId(coordinator,self._attr_name)
+        # Keep the legacy unique_id format so existing entities/history are preserved
+        self._attr_unique_id=Utilities.GenerateUniqueId(coordinator,Utilities.FormatSensorName(dataSource,propertyName))
 
         self._attributeNames = attributeNames
         
