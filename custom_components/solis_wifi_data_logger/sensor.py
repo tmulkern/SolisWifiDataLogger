@@ -27,7 +27,7 @@ async def async_setup_entry(hass, entry:ConfigEntry, async_add_entities):
     for dataSource, value in filteredSystemData.items():
         propertyNames=[a for a in dir(value) if not a.startswith('__') and not callable(getattr(value, a))]
         for propertyName in propertyNames:
-            deviceInfo = Utilities.GenerateDeviceInfo(hass, systemdata, dataSource)
+            deviceInfo = Utilities.GenerateDeviceInfo(hass, entry, systemdata, dataSource)
             sensor=SolisApiSensor.factory(coordinator,dataSource,propertyName,deviceInfo)
             if(sensor):
                 sensors.append(sensor)

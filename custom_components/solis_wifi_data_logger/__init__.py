@@ -41,7 +41,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await coordinator.async_config_entry_first_refresh()
 
     # Ensure hub device exists in the device registry so child devices can reference its via_device_id
-    hub_info = Utilities.GenerateDeviceInfo(hass, coordinator.data, "wifi_logger")
+    hub_info = Utilities.GenerateDeviceInfo(hass, entry, coordinator.data, "wifi_logger")
     if hub_info:
         dev_reg = dr.async_get(hass)
         dev_reg.async_get_or_create(config_entry_id=entry.entry_id, **hub_info)

@@ -1,3 +1,4 @@
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -26,7 +27,7 @@ class Utilities:
         return f"{DOMAIN}_{coordinator.data.wifi_logger.serial_number}_{sensorName}"
     
     @staticmethod
-    def GenerateDeviceInfo(hass: HomeAssistant, systemData: SystemData, dataSource: str) -> DeviceInfo | None:
+    def GenerateDeviceInfo(hass: HomeAssistant, entry: ConfigEntry, systemData: SystemData, dataSource: str) -> DeviceInfo | None:
 
         if dataSource == "wifi_logger":
             return DeviceInfo(
@@ -43,7 +44,8 @@ class Utilities:
         if dataSource == "inverter":
             dev_reg = dr.async_get(hass)
             hub_device = dev_reg.async_get_device_by_identifier(
-                (DOMAIN, f"solis_wifi_data_logger_{systemData.wifi_logger.serial_number}")
+                (DOMAIN, f"solis_wifi_data_logger_{systemData.wifi_logger.serial_number}"),
+                entry.entry_id,
             )
             return DeviceInfo(
                 model=systemData.inverter.model,
