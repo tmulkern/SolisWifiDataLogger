@@ -3,7 +3,8 @@ import logging
 from typing import Type
 from .solis_wifi_api import SystemData
 
-from homeassistant.components.sensor import SensorEntity,StateType,SensorStateClass
+from homeassistant.components.sensor import SensorEntity, SensorStateClass
+from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity

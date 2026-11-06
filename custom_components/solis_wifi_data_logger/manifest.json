@@ -5,8 +5,9 @@
     "documentation": "",
     "integration_type": "device",
     "dependencies": [],
-    "codeowners": ["tmulkern"],
+    "codeowners": ["@tmulkern"],
     "requirements": ["aiofiles>=22.1.0"],
-    "version": "0.0.1"
+    "version": "1.0.0",
+    "homeassistant": "2025.1.0"
   }
   

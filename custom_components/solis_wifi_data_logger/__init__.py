@@ -4,7 +4,7 @@ import logging
 from homeassistant import config_entries, core
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST,CONF_USERNAME,CONF_PASSWORD
-from homeassistant.helpers.typing import HomeAssistantType
+from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN, COORDINATOR
 from .data_update_coordinator import SolisWifiApiDataUpdateCoordinator
@@ -17,7 +17,7 @@ async def async_setup(hass, config):
 
     return True
 
-async def async_setup_entry(hass:HomeAssistantType, entry:ConfigEntry):
+async def async_setup_entry(hass:HomeAssistant, entry:ConfigEntry):
     """Set up Solis Wifi Data Logger from a config entry."""
 
     # Set the Hub up to use and save
@@ -37,13 +37,7 @@ async def async_setup_entry(hass:HomeAssistantType, entry:ConfigEntry):
 
     await coordinator.async_config_entry_first_refresh()
     
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setup(entry, "binary_sensor")
-    )
-
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setup(entry, "sensor")
-    )
+    await hass.config_entries.async_forward_entry_setups(entry, ["binary_sensor", "sensor"])
 
     return True
 
