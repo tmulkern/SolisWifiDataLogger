@@ -1,44 +1,26 @@
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-only
 import logging
 
-from homeassistant import config_entries, core
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_USERNAME, CONF_PASSWORD, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 
-from .const import DOMAIN, COORDINATOR
-from .data_update_coordinator import SolisWifiApiDataUpdateCoordinator
+from .data_update_coordinator import SolisConfigEntry, SolisWifiApiDataUpdateCoordinator
 from .utilities import Utilities
 
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
 
-async def async_setup(hass, config):
-    """Set up Solis Wifi Data Logger components."""
-    hass.data.setdefault(DOMAIN, {})
 
-    return True
-
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: SolisConfigEntry) -> bool:
     """Set up Solis Wifi Data Logger from a config entry."""
 
-    # Set the Hub up to use and save
-    hostname = entry.data[CONF_HOST]
-    username = entry.data[CONF_USERNAME]
-    password = entry.data[CONF_PASSWORD]
-
-    coordinator = SolisWifiApiDataUpdateCoordinator(
-        hass,
-        hostname,
-        username,
-        password
-    )
-
-    hass.data.setdefault(DOMAIN, {})[COORDINATOR] = coordinator
+    coordinator = SolisWifiApiDataUpdateCoordinator(hass, entry)
 
     await coordinator.async_config_entry_first_refresh()
+
+    entry.runtime_data = coordinator
 
     # Ensure hub device exists in the device registry so child devices can reference its via_device_id
     hub_info = Utilities.GenerateDeviceInfo(hass, entry, coordinator.data, "wifi_logger")
@@ -51,13 +33,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: SolisConfigEntry) -> bool:
     """Unload a config entry."""
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-
-
-async def options_update_listener(hass: core.HomeAssistant, config_entry: config_entries.ConfigEntry):
-    """Handle options update."""
-    await hass.config_entries.async_reload(config_entry.entry_id)
-    
-
