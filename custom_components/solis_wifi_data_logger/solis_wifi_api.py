@@ -8,6 +8,8 @@ import asyncio
 
 import logging
 
+from homeassistant.util import dt as dt_util
+
 _LOGGER = logging.getLogger(__name__)
 
 from .const import JSON_CACHE_FILE
@@ -83,10 +85,15 @@ class SystemData:
 
 class SolisWifiApi():
 
-    def __init__(self,hostname:str,username:str,password:str) -> None:
+    def __init__(self,hostname:str,username:str,password:str,session:aiohttp.ClientSession|None=None,cache_path:str|None=None) -> None:
         
         _LOGGER.debug("Initializing SolisWifiApi for host %s", hostname)
-        self._session = aiohttp.ClientSession(base_url=hostname,auth=aiohttp.BasicAuth(username,password))
+        self._hostname = hostname.rstrip("/")
+        self._auth = aiohttp.BasicAuth(username,password)
+        # Use the supplied (shared) session if given, otherwise own a private one
+        self._owns_session = session is None
+        self._session = session if session is not None else aiohttp.ClientSession()
+        self._cache_path = cache_path or JSON_CACHE_FILE
    
     async def getSystemData(self) -> SystemData:
         inverter_data = await self.getInverterData()
@@ -117,7 +124,7 @@ class SolisWifiApi():
 
         return WifiDataLoggerData(
             True,
-            datetime.now(),
+            dt_util.utcnow(),
             monitorDataRaw[0],
             monitorDataRaw[1],
             True if monitorDataRaw[2] == "Enable" else False,
@@ -148,7 +155,7 @@ class SolisWifiApi():
 
         wifi_logger_data=WifiDataLoggerData(
             False,
-            last_known_system_data.wifi_logger.last_seen if last_known_system_data else datetime.min,
+            last_known_system_data.wifi_logger.last_seen if last_known_system_data else dt_util.utc_from_timestamp(0),
             last_known_system_data.wifi_logger.serial_number if last_known_system_data else "",
             None,
             None,
@@ -166,7 +173,7 @@ class SolisWifiApi():
     async def _getCachedData(self) -> SystemData | None:
 
         try:
-            async with aiofiles.open(JSON_CACHE_FILE, mode='rb') as f:
+            async with aiofiles.open(self._cache_path, mode='rb') as f:
                 content = await f.read()
                 system_data_dict=orjson.loads(content)
                 system_data=SystemData.from_dict(system_data_dict)
@@ -179,11 +186,10 @@ class SolisWifiApi():
         return str(int(time.time()))
     
     async def _loadDataAndParseResponse(self,dataSource:str,dataSourceName:str,dataExpectedLength:int)-> list[str]:
-        response= await self._session.get("/{dataSource}.cgi?t={time}".format(dataSource=dataSource,time=self._generateTimeToken()))
-
-        response.raise_for_status()
-
-        responseText = await response.text()
+        url = f"{self._hostname}/{dataSource}.cgi?t={self._generateTimeToken()}"
+        async with self._session.get(url, auth=self._auth) as response:
+            response.raise_for_status()
+            responseText = await response.text()
 
         dataRaw=self._parseResponseText(responseText)
         
@@ -200,18 +206,21 @@ class SolisWifiApi():
         return cleanedup.split(";")
 
     async def close(self):
-        await self._session.close()
+        if self._owns_session:
+            await self._session.close()
 
 class SolisWifiApiManager:
 
-    def __init__(self,hostname:str,username:str,password:str) -> None:
+    def __init__(self,hostname:str,username:str,password:str,session:aiohttp.ClientSession|None=None,cache_path:str|None=None) -> None:
         
         self._hostname=hostname
         self._username=username
         self._password=password
+        self._session=session
+        self._cache_path=cache_path
 
     async def __aenter__(self) -> SolisWifiApi:
-        self.soliswifiapi=SolisWifiApi(self._hostname,self._username,self._password)
+        self.soliswifiapi=SolisWifiApi(self._hostname,self._username,self._password,self._session,self._cache_path)
         return self.soliswifiapi
 
     async def __aexit__(self, exc_type, exc, tb):

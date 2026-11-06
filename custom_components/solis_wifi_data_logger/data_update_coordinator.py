@@ -6,6 +6,7 @@ import aiofiles
 import orjson
 
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .solis_wifi_api import SolisWifiApiManager, SolisWifiApiParseException, SystemData
@@ -30,6 +31,7 @@ class SolisWifiApiDataUpdateCoordinator(DataUpdateCoordinator[SystemData]):
         self._hostname=hostname
         self._username=username
         self._password=password
+        self._cache_path=hass.config.path(JSON_CACHE_FILE)
 
     async def async_update_data(self) -> SystemData:
         """Fetch data from the Solis Wifi Data Logger all at once and make it available for
@@ -37,7 +39,13 @@ class SolisWifiApiDataUpdateCoordinator(DataUpdateCoordinator[SystemData]):
         """
         _LOGGER.debug("Executing async_update_data()")
 
-        async with SolisWifiApiManager(self._hostname, self._username, self._password) as solis_wifi_api:
+        async with SolisWifiApiManager(
+            self._hostname,
+            self._username,
+            self._password,
+            session=async_get_clientsession(self.hass),
+            cache_path=self._cache_path,
+        ) as solis_wifi_api:
             try:
                 async with asyncio.timeout(20):
                     system_data = await solis_wifi_api.getSystemData()
@@ -60,5 +68,5 @@ class SolisWifiApiDataUpdateCoordinator(DataUpdateCoordinator[SystemData]):
         return system_data
     
     async def _cache_system_data(self,data:SystemData) -> None :
-        async with aiofiles.open(JSON_CACHE_FILE, mode='wb') as f:
+        async with aiofiles.open(self._cache_path, mode='wb') as f:
             await f.write(orjson.dumps(data))
