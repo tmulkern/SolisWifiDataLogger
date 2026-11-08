@@ -6,11 +6,12 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_USERNAME, CONF_PASSWORD
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from aiohttp.client_exceptions import ClientConnectionError,ClientResponseError
 
 from .const import DOMAIN,DEFAULT_HOST,DEFAULT_USERNAME
 from .solis_wifi_api import(
-    SolisWifiApiManager,
+    SolisWifiApi,
     WifiDataLoggerData,
     SolisWifiApiParseException
 ) 
@@ -26,12 +27,10 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 )
 
 
-@config_entries.HANDLERS.register("SolisWifiDataLogger")
-class FlowHandler(config_entries.ConfigFlow,domain=DOMAIN):
+class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow."""
 
     VERSION = 1
-    CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
 
     def __init__(self):
         """Initialize the Solis Wifi Data Logger flow."""
@@ -70,25 +69,24 @@ class FlowHandler(config_entries.ConfigFlow,domain=DOMAIN):
 
     async def _attempt_connection(self, hostname,username, password):
         """Create device."""
-        async with SolisWifiApiManager(hostname,username,password) as solr_wifi_api:
+        solr_wifi_api = SolisWifiApi(hostname,username,password,async_get_clientsession(self.hass))
 
-            try:
-                return await solr_wifi_api.getSystemData()
-                #
-            except SolisWifiApiParseException as e:
-                _LOGGER.error(e)
-                return {CONF_HOST:"incorrect_host"}
-            except ClientConnectionError as e:
-                _LOGGER.error(e)
-                return {CONF_HOST:"cannot_connect"}
-            except ClientResponseError as e:
-                _LOGGER.error(e)
+        try:
+            return await solr_wifi_api.getSystemData()
+        except SolisWifiApiParseException as e:
+            _LOGGER.error(e)
+            return {CONF_HOST:"incorrect_host"}
+        except (ClientConnectionError, TimeoutError) as e:
+            _LOGGER.error(e)
+            return {CONF_HOST:"cannot_connect"}
+        except ClientResponseError as e:
+            _LOGGER.error(e)
 
-                if e.status==401:
-                   return {CONF_PASSWORD:"invalid_auth"}
-                if e.status==404:
-                   return {CONF_PASSWORD:"incorrect_host"}
-                return {"base":"unknown"}
+            if e.status==401:
+               return {CONF_PASSWORD:"invalid_auth"}
+            if e.status==404:
+               return {CONF_HOST:"incorrect_host"}
+            return {"base":"unknown"}
 
 
     

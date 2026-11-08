@@ -1,0 +1,14 @@
+services:
+  homeassistant:
+    container_name: homeassistant-test
+    image: ghcr.io/home-assistant/home-assistant:stable
+    volumes:
+      # Persistent configuration directory
+      - ./config:/config
+      # Maps your local custom component directly into Home Assistant's custom components folder
+      - ../custom_components:/config/custom_components
+    environment:
+      - TZ=Europe/Dublin
+    ports:
+      - "8123:8123"
+    restart: unless-stopped

@@ -1,93 +1,129 @@
+from __future__ import annotations
 
 import logging
-from typing import Type
-from .solis_wifi_api import SystemData
+from dataclasses import dataclass
 
-from homeassistant.components.sensor import SensorEntity,StateType,SensorStateClass
-from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.update_coordinator import (
-    CoordinatorEntity
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorEntityDescription,
+    SensorStateClass,
 )
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.helpers.entity import EntityCategory
-from homeassistant.core import callback
-from .utilities import Utilities
-from .data_update_coordinator import SolisWifiApiDataUpdateCoordinator
+from homeassistant.const import PERCENTAGE, EntityCategory, UnitOfEnergy, UnitOfPower, UnitOfTemperature
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN,COORDINATOR
+from .const import DOMAIN
+from .data_update_coordinator import SolisConfigEntry, SolisWifiApiDataUpdateCoordinator
+from .utilities import Utilities
+
 _LOGGER = logging.getLogger(__name__)
 
-async def async_setup_entry(hass, entry:ConfigEntry, async_add_entities):
 
-    coordinator: SolisWifiApiDataUpdateCoordinator = hass.data[DOMAIN][COORDINATOR]
+@dataclass(frozen=True, kw_only=True)
+class SolisSensorEntityDescription(SensorEntityDescription):
+    """Describes a Solis sensor; `key` is the property name on the data source."""
 
-    systemdata:SystemData = coordinator.data
-    sensors = []
+    data_source: str
 
-    filteredSystemData = { k:v for (k,v) in systemdata.__dict__.items()}
-    for dataSource, value in filteredSystemData.items():
-        propertyNames=[a for a in dir(value) if not a.startswith('__') and not callable(getattr(value, a))]
-        for propertyName in propertyNames:
-            deviceInfo = Utilities.GenerateDeviceInfo(systemdata,dataSource)
-            sensor=SolisApiSensor.factory(coordinator,dataSource,propertyName,deviceInfo)
-            if(sensor):
-                sensors.append(sensor)
 
-    async_add_entities(sensors)
+SENSOR_DESCRIPTIONS: tuple[SolisSensorEntityDescription, ...] = (
+    SolisSensorEntityDescription(
+        data_source="inverter",
+        key="temperature",
+        name="Temperature",
+        icon="mdi:thermometer",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    SolisSensorEntityDescription(
+        data_source="inverter",
+        key="current_power",
+        name="Current Power",
+        icon="mdi:solar-power-variant",
+        device_class=SensorDeviceClass.POWER,
+        native_unit_of_measurement=UnitOfPower.WATT,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    SolisSensorEntityDescription(
+        data_source="inverter",
+        key="daily_power_yield",
+        name="Daily Power Yield",
+        icon="mdi:meter-electric",
+        device_class=SensorDeviceClass.ENERGY,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+    ),
+    SolisSensorEntityDescription(
+        data_source="wifi_logger",
+        key="signal_quality",
+        name="Signal Quality",
+        icon="mdi:signal",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+)
 
-class SolisApiSensor(CoordinatorEntity[SolisWifiApiDataUpdateCoordinator],SensorEntity):
 
-    @staticmethod
-    def factory(coordinator: SolisWifiApiDataUpdateCoordinator,dataSource:str,propertyName:str,deviceInfo:DeviceInfo):
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: SolisConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
+) -> None:
 
-        mapping = {
-            "inverter" : {
-               "temperature" : [Type[float],"temperature","mdi:thermometer",EntityCategory.DIAGNOSTIC,"°C",SensorStateClass.MEASUREMENT],
-               "current_power" : [Type[float],"power","mdi:solar-power-variant",EntityCategory.DIAGNOSTIC,"W",SensorStateClass.MEASUREMENT],
-               "daily_power_yield" : [Type[float],"energy","mdi:meter-electric",EntityCategory.DIAGNOSTIC,"kWh",SensorStateClass.TOTAL_INCREASING]
-            },
-            "wifi_logger" : {
-               "signal_quality" : [Type[float],None,"mdi:signal",EntityCategory.DIAGNOSTIC,"%",SensorStateClass.MEASUREMENT],
-            }
-        }
-        if mapping.get(dataSource) and mapping[dataSource].get(propertyName):
-           configuration=mapping[dataSource][propertyName]
-        
-        else:
-            return None
-        
-        return SolisApiSensor(coordinator,dataSource,propertyName,configuration[0],configuration[1],configuration[2],configuration[3],configuration[4],configuration[5],deviceInfo)
+    coordinator = entry.runtime_data
+    systemdata = coordinator.data
 
-    def __init__(self, coordinator: SolisWifiApiDataUpdateCoordinator,dataSource:str,propertyName:str,stateType:StateType,deviceClass:str,icon:str,entityCategory:EntityCategory,native_unit_of_measurement:str, stateClass:SensorStateClass,deviceInfo:DeviceInfo) -> None:
+    device_infos = {
+        data_source: Utilities.GenerateDeviceInfo(hass, entry, systemdata, data_source)
+        for data_source in {d.data_source for d in SENSOR_DESCRIPTIONS}
+    }
+
+    async_add_entities(
+        SolisApiSensor(coordinator, description, device_infos[description.data_source])
+        for description in SENSOR_DESCRIPTIONS
+    )
+
+
+class SolisApiSensor(CoordinatorEntity[SolisWifiApiDataUpdateCoordinator], SensorEntity):
+
+    entity_description: SolisSensorEntityDescription
+    _attr_has_entity_name = True
+
+    def __init__(
+        self,
+        coordinator: SolisWifiApiDataUpdateCoordinator,
+        description: SolisSensorEntityDescription,
+        deviceInfo: DeviceInfo | None,
+    ) -> None:
         super().__init__(coordinator)
+        self.entity_description = description
 
-        self._dataSource=dataSource
-        self._propertyName=propertyName
-        self._attr_state=stateType
-        self._attr_device_class=deviceClass
-        self._attr_icon=icon
-        self._attr_state_class=stateClass
-        self._attr_entity_category=entityCategory
-        self._attr_native_unit_of_measurement=native_unit_of_measurement
-        self._attr_should_poll=False
-
-        self._attr_name=Utilities.FormatSensorName(dataSource,propertyName)
-        self._attr_device_info=deviceInfo
-        self._attr_unique_id=Utilities.GenerateUniqueId(coordinator,self._attr_name)
+        self._attr_device_info = deviceInfo
+        # Keep the legacy unique_id format so existing entities/history are preserved
+        self._attr_unique_id = Utilities.GenerateUniqueId(
+            coordinator, Utilities.FormatSensorName(description.data_source, description.key)
+        )
 
         #Set Initial Value
-        self._attr_native_value=getattr(self._data(),self._propertyName)
+        self._attr_native_value = self._current_value()
 
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-        self._attr_native_value=getattr(self._data(),self._propertyName)
+        self._attr_native_value = self._current_value()
         self.async_write_ha_state()
 
-    def _data(self)->SystemData | None:
-        return getattr(self.coordinator.data,self._dataSource,None)    
+    def _data(self):
+        return getattr(self.coordinator.data, self.entity_description.data_source, None)
+
+    def _current_value(self):
+        return getattr(self._data(), self.entity_description.key, None)
 
     @property
     def available(self) -> bool:
-        return self._data() is not None and getattr(self._data(),self._propertyName,None) is not None
-    
+        return self._current_value() is not None
