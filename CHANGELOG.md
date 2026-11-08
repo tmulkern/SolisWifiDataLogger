@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.0.8
 
 Code review and modernization against Home Assistant 2026.11 (Python 3.14).
 Requires Python 3.12+ (uses the `type` statement).
